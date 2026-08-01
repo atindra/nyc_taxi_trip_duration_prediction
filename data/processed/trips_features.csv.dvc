@@ -1,0 +1,5 @@
+outs:
+- md5: e389f3649c778cc365fb3c7b3a5f3e6e
+  size: 1002587
+  hash: md5
+  path: trips_features.csv
