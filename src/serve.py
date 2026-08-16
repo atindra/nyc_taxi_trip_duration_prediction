@@ -3,6 +3,7 @@ Week 3 / M4 - REST API serving the trained ETA prediction model.
 
 Accepts trip details and returns predicted ETA in minutes.
 Includes input validation and error handling per the brief's requirement.
+Also logs every prediction (Week 4 / M5) for later drift/monitoring analysis.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -10,6 +11,25 @@ from pydantic import BaseModel, Field
 import pandas as pd
 import joblib
 import json
+import csv
+from datetime import datetime
+import os
+
+PREDICTION_LOG = "logs/predictions.csv"
+os.makedirs("logs", exist_ok=True)
+
+
+def log_prediction(trip: dict, prediction: float):
+    file_exists = os.path.isfile(PREDICTION_LOG)
+    with open(PREDICTION_LOG, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(trip.keys()) + ["predicted_eta_minutes", "timestamp"])
+        if not file_exists:
+            writer.writeheader()
+        row = dict(trip)
+        row["predicted_eta_minutes"] = prediction
+        row["timestamp"] = datetime.utcnow().isoformat()
+        writer.writerow(row)
+
 
 MODEL_PATH = "models/xgboost_eta_model.joblib"
 FEATURE_COLUMNS_PATH = "models/feature_columns.json"
@@ -66,5 +86,7 @@ def predict(trip: TripRequest):
         pred = model.predict(X)[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+    log_prediction(trip.dict(), float(pred))
 
     return ETAResponse(predicted_eta_minutes=round(float(pred), 2))
