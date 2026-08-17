@@ -1,7 +1,5 @@
 """Guarded retraining decision: drift alone is not sufficient."""
 
-from __future__ import annotations
-
 
 def should_retrain(monitoring_result: dict, data_valid: bool, labelled_mae: float | None, champion_mae: float) -> dict:
     severe_drift = sum(item.get("psi", 0) > 0.25 for item in monitoring_result.values()) >= 2

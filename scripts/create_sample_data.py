@@ -1,18 +1,12 @@
-"""Deterministically generate the synthetic trips + weather dataset.
+"""Generate the synthetic trips + weather dataset.
 
-This IS the project's dataset (not a fallback): the brief explicitly permits a
-synthetic delivery dataset. A fixed seed makes every byte of the output
-reproducible; the generated CSVs are committed to git so a fresh clone needs
-no downloads. Rerun this script only if the dataset itself should change,
-then rerun `dvc repro --force`.
+This IS the project's dataset (not a fallback): the brief permits a synthetic
+delivery dataset. The fixed seed makes the output fully deterministic and the
+CSVs are committed to git. Only rerun this if the dataset itself should
+change, then rerun `dvc repro --force`.
 
-Design goals:
-- Plausible NYC trip generation: rush hours, weekday/weekend, distance-based
-  durations, weather effects, seasonal temperature.
-- Deliberately messy: a small fraction (~1.5%) of rows violate schema rules
-  (out-of-range GPS, impossible durations, missing timestamps) so the
-  validation/quarantine stage has real work to do.
-- Small enough to git-commit: ~50k trips ≈ 4 MB CSV.
+The data is deliberately a bit messy (~1.5% bad rows) so the validation stage
+has real work to do.
 """
 
 from pathlib import Path

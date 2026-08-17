@@ -1,10 +1,9 @@
 """Simulate a rush-hour surge window and measure drift with the trained model.
 
 Reference window: the validated trips as-is.
-Shifted window: same trips moved to evening rush hour with longer distances and
-a congestion multiplier on actual durations (festival/rush-hour scenario from
-the brief). Predictions come from the deployed champion pipeline — never from
-the actual durations — and MAE is computed against the (shifted) actuals.
+Shifted window: same trips moved to evening rush hour with longer distances
+and a congestion multiplier on actual durations. Predictions always come from
+the deployed champion model, never from the actual durations.
 """
 
 from pathlib import Path

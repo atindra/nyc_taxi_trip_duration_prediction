@@ -1,14 +1,12 @@
 """Data quality checks and invalid-row quarantine."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
 import pandas as pd
 
 REQUIRED_COLUMNS = {
-    "row_id", "trip_id", "pickup_datetime", "dropoff_datetime", "passenger_count",
+    "trip_id", "pickup_datetime", "dropoff_datetime", "passenger_count",
     "pickup_longitude", "pickup_latitude", "dropoff_longitude", "dropoff_latitude",
     "trip_duration", "temp_c", "precipitation_mm", "weather",
 }
@@ -34,9 +32,9 @@ def validate(frame: pd.DataFrame, quarantine_path: str | Path, report_path: str 
         data[column] = pd.to_numeric(data[column], errors="coerce")
 
     def add_failure(mask: pd.Series, reason: str) -> None:
-        reasons.loc[mask] = reasons.loc[mask].where(reasons.loc[mask] == "", reasons.loc[mask] + ";") + reason
+        existing = reasons.loc[mask]
+        reasons.loc[mask] = [reason if not current else f"{current};{reason}" for current in existing]
 
-    add_failure(data["row_id"].isna() | data["row_id"].duplicated(keep=False), "row_id_missing_or_duplicate")
     add_failure(data["pickup_datetime"].isna() | data["dropoff_datetime"].isna(), "invalid_timestamp")
     add_failure(data["pickup_longitude"].isna() | data["dropoff_longitude"].isna() | data["pickup_latitude"].isna() | data["dropoff_latitude"].isna(), "missing_gps")
     add_failure((data["pickup_longitude"].notna() & ~data["pickup_longitude"].between(-74.3, -73.6)) | (data["dropoff_longitude"].notna() & ~data["dropoff_longitude"].between(-74.3, -73.6)) | (data["pickup_latitude"].notna() & ~data["pickup_latitude"].between(40.4, 41.1)) | (data["dropoff_latitude"].notna() & ~data["dropoff_latitude"].between(40.4, 41.1)), "coordinates_out_of_range")

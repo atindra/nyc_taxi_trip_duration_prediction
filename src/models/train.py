@@ -1,11 +1,4 @@
-"""Train comparable regression pipelines and save the selected artifact.
-
-Every candidate run is logged to MLflow (local ./mlruns store) with
-hyperparameters, metrics, data/code versions, and the serialized pipeline
-artifact, so any run can be reproduced from its logged configuration.
-"""
-
-from __future__ import annotations
+"""Train the candidate models, compare them, and save the best one."""
 
 import hashlib
 import json
@@ -38,7 +31,7 @@ CATEGORICAL_FEATURES = ["weather"]
 
 def build_pipeline(model) -> Pipeline:
     preprocessor = ColumnTransformer([
-        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median", add_indicator=True)), ("scale", StandardScaler())]), NUMERIC_FEATURES),
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), NUMERIC_FEATURES),
         ("categorical", Pipeline([("impute", SimpleImputer(strategy="most_frequent")), ("one_hot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), CATEGORICAL_FEATURES),
     ])
     return Pipeline([("features", TaxiFeatureTransformer()), ("preprocess", preprocessor), ("model", model)])
@@ -62,7 +55,7 @@ def _git_sha() -> str:
 
 
 def _data_version() -> str:
-    """Fingerprint both raw inputs (trips + weather) by hashing their contents."""
+    """Hash the raw inputs so each run can be tied back to the exact data."""
 
     raw_dir = Path(__file__).resolve().parents[2] / "data/raw"
     digests = []
@@ -78,8 +71,8 @@ def _data_version() -> str:
 def train_and_compare(data_path: str | Path, model_path: str | Path, metadata_path: str | Path, comparison_path: str | Path) -> dict:
     data = pd.read_csv(data_path, parse_dates=["pickup_datetime", "dropoff_datetime"])
     train, validation, test = chronological_split(data)
-    # Exclude the target, post-trip fields, and tracking/join-only columns.
-    X_columns = [column for column in data.columns if column not in {"trip_duration", "dropoff_datetime", "trip_id", "row_id", "weather_date"}]
+    # Keep only the features the model is allowed to see at prediction time.
+    X_columns = [column for column in data.columns if column not in {"trip_duration", "dropoff_datetime", "trip_id", "weather_date"}]
 
     root = Path(__file__).resolve().parents[2]
     mlflow.set_tracking_uri(f"sqlite:///{root / 'mlflow.db'}")
@@ -96,8 +89,7 @@ def train_and_compare(data_path: str | Path, model_path: str | Path, metadata_pa
     for name, model in candidates.items():
         with mlflow.start_run(run_name=name, tags=tags):
             estimator = model.named_steps["model"]
-            mlflow.log_params({f"model__{k}": v for k, v in estimator.get_params().items() if k in {
-                "strategy", "alpha", "max_iter", "learning_rate", "max_leaf_nodes", "random_state"}})
+            mlflow.log_params({f"model__{key}": value for key, value in estimator.get_params().items()})
             mlflow.log_param("model_type", type(estimator).__name__)
             mlflow.log_param("train_rows", len(train))
 
@@ -117,6 +109,8 @@ def train_and_compare(data_path: str | Path, model_path: str | Path, metadata_pa
                 "test_rmse_seconds": results[name]["test"]["rmse_seconds"],
                 "fit_seconds": fit_seconds,
             })
+            # MLflow 3.x defaults to skops and needs our custom transformer
+            # explicitly trusted to reload the model safely.
             model_info = mlflow.sklearn.log_model(
                 model,
                 name="model",

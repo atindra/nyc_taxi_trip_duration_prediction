@@ -1,7 +1,5 @@
 """Small, auditable drift metrics used by the local monitoring job."""
 
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 from scipy.stats import chisquare, ks_2samp

@@ -1,12 +1,10 @@
 """FastAPI prediction service for the saved full preprocessing/model pipeline."""
 
-from __future__ import annotations
-
 import json
 import sqlite3
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -19,8 +17,19 @@ MODEL_PATH = ROOT / "models/champion.joblib"
 METADATA_PATH = ROOT / "models/model_metadata.json"
 LOG_PATH = ROOT / "monitoring/predictions.sqlite"
 app = FastAPI(title="NYC Taxi ETA API", version="1.0.0")
-model = None
-metadata = {}
+
+
+def _load_model():
+    """Load the champion model and metadata, or return (None, {}) if missing."""
+    try:
+        loaded_model = joblib.load(MODEL_PATH)
+        loaded_metadata = json.loads(METADATA_PATH.read_text())
+        return loaded_model, loaded_metadata
+    except Exception:
+        return None, {}
+
+
+model, metadata = _load_model()
 
 
 class PredictionRequest(BaseModel):
@@ -35,34 +44,15 @@ class PredictionRequest(BaseModel):
     weather: str = Field(pattern="^(clear|cloudy|rain|snow)$")
 
 
-def _load() -> None:
-    global model, metadata
-    if MODEL_PATH.exists() and METADATA_PATH.exists():
-        model = joblib.load(MODEL_PATH)
-        metadata = json.loads(METADATA_PATH.read_text())
-
-
-def _ensure_loaded() -> None:
-    if model is None:
-        _load()
-
-
 def _log_event(event: dict) -> None:
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(LOG_PATH) as connection:
         connection.execute("CREATE TABLE IF NOT EXISTS predictions (request_id TEXT PRIMARY KEY, event_json TEXT NOT NULL)")
         connection.execute("INSERT INTO predictions VALUES (?, ?)", (event["request_id"], json.dumps(event)))
-        connection.commit()
-
-
-@app.on_event("startup")
-def startup() -> None:
-    _load()
 
 
 @app.get("/health")
 def health() -> dict:
-    _ensure_loaded()
     if model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
     return {"status": "ok"}
@@ -70,7 +60,6 @@ def health() -> dict:
 
 @app.get("/v1/model/info")
 def model_info() -> dict:
-    _ensure_loaded()
     if model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
     return metadata
@@ -78,7 +67,6 @@ def model_info() -> dict:
 
 @app.post("/v1/predict")
 def predict(request: PredictionRequest) -> dict:
-    _ensure_loaded()
     if model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
     request_id = str(uuid.uuid4())
@@ -90,7 +78,7 @@ def predict(request: PredictionRequest) -> dict:
         raise HTTPException(status_code=500, detail="Prediction failed") from error
     latency_ms = (time.perf_counter() - started) * 1000
     _log_event({
-        "request_id": request_id, "event_time": datetime.utcnow().isoformat(),
+        "request_id": request_id, "event_time": datetime.now(timezone.utc).isoformat(),
         "model_version": metadata.get("model_version", "unknown"), "inputs": inputs,
         "prediction_seconds": prediction_seconds, "latency_ms": latency_ms,
     })
