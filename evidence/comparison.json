@@ -1,8 +1,8 @@
 {
   "run_ids": {
-    "baseline_median": "aa99d1f8976c46c0be6796114f35df69",
-    "ridge": "c421cfc6eccc4a3f9def920fb9f9c1a4",
-    "hist_gradient_boosting": "6365e21294584aa7a0346df10eb48d77"
+    "baseline_median": "aadef7a112b44d3f9bd64b3d94e3136b",
+    "ridge": "0ae520671ffd46d1ac994ac2b267cd1c",
+    "hist_gradient_boosting": "3e4a8e2ae1294f0fa453d2a2d8261350"
   },
   "results": {
     "baseline_median": {
@@ -14,7 +14,7 @@
         "mae_seconds": 213.89435188947581,
         "rmse_seconds": 369.21357058893386
       },
-      "fit_seconds": 0.07952483400003985
+      "fit_seconds": 0.07563154195668176
     },
     "ridge": {
       "validation": {
@@ -25,7 +25,7 @@
         "mae_seconds": 90.15602234685694,
         "rmse_seconds": 124.59931228554787
       },
-      "fit_seconds": 0.058048499980941415
+      "fit_seconds": 0.05621870799222961
     },
     "hist_gradient_boosting": {
       "validation": {
@@ -36,7 +36,7 @@
         "mae_seconds": 74.21632444055744,
         "rmse_seconds": 100.03321924027853
       },
-      "fit_seconds": 0.7732529589557089
+      "fit_seconds": 0.8062490000156686
     }
   }
 }

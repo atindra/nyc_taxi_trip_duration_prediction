@@ -66,13 +66,13 @@ stages:
     outs:
     - path: experiments/comparison.json
       hash: md5
-      md5: d943af9e358cee475610e7198112fcba
-      size: 1111
+      md5: 90fbd90f05d8da654c3a947685de0482
+      size: 1110
     - path: models/champion.joblib
       hash: md5
       md5: d7af3201c78decf096b36f170d128fac
       size: 174922
     - path: models/model_metadata.json
       hash: md5
-      md5: 5041717f82b4d5dec76e5b870acd7d4b
+      md5: 101150123a423b4cc93f90560d823e51
       size: 607
