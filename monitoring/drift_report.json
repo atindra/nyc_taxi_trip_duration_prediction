@@ -1,0 +1,28 @@
+{
+  "drift_metrics": {
+    "distance_km": {
+      "psi": 0.22197148346218182,
+      "ks_statistic": 0.19151443724219214,
+      "ks_p_value": 0.0
+    },
+    "pickup_hour": {
+      "psi": 21.33064044952032,
+      "ks_statistic": 0.6304431755836872,
+      "ks_p_value": 0.0
+    },
+    "prediction_seconds": {
+      "psi": 0.4594434707004055,
+      "ks_statistic": 0.2791132424359417,
+      "ks_p_value": 0.0
+    },
+    "weather": {
+      "chi_squared": 2.0171929827891493e-17,
+      "chi_squared_p_value": 1.0
+    }
+  },
+  "performance": {
+    "reference_mae_seconds": 73.36309815885053,
+    "shifted_mae_seconds": 155.72411934239256,
+    "mae_change_ratio": 2.123
+  }
+}

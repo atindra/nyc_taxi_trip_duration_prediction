@@ -1,0 +1,6 @@
+{
+  "data_valid": true,
+  "severe_drift": true,
+  "performance_degraded": true,
+  "action": "retrain_and_compare"
+}

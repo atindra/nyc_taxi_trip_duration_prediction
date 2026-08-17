@@ -1,0 +1,25 @@
+{
+  "model_version": "1.0.0",
+  "champion": "hist_gradient_boosting",
+  "mlflow_run_id": "6365e21294584aa7a0346df10eb48d77",
+  "target": "trip_duration_seconds",
+  "feature_inputs": [
+    "pickup_datetime",
+    "passenger_count",
+    "pickup_longitude",
+    "pickup_latitude",
+    "dropoff_longitude",
+    "dropoff_latitude",
+    "temp_c",
+    "precipitation_mm",
+    "weather"
+  ],
+  "train_rows": 34449,
+  "validation_rows": 7381,
+  "test_rows": 7383,
+  "split_boundaries": {
+    "train_end": "2016-05-07 18:21:08",
+    "validation_end": "2016-06-03 22:54:42",
+    "test_end": "2016-06-30 23:17:31"
+  }
+}

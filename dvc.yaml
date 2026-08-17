@@ -1,0 +1,30 @@
+stages:
+  ingest:
+    cmd: .venv/bin/python scripts/run_ingestion.py
+    deps:
+      - src/data/ingest.py
+      - data/raw/trips.csv
+      - data/raw/weather.csv
+    outs:
+      - data/interim/ingested_trips.csv
+      - data/interim/ingestion_report.json
+  validate:
+    cmd: .venv/bin/python scripts/run_validation.py
+    deps:
+      - src/data/validate.py
+      - data/interim/ingested_trips.csv
+    outs:
+      - data/processed/validated_trips.csv
+      - data/processed/validation_report.json
+      - data/quarantine/invalid_rows.csv
+  train:
+    cmd: .venv/bin/python scripts/train_model.py
+    deps:
+      - src/features/transform.py
+      - src/models/train.py
+      - data/processed/validated_trips.csv
+    outs:
+      - models/champion.joblib
+      - models/model_metadata.json
+    metrics:
+      - experiments/comparison.json

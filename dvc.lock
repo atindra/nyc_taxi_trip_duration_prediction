@@ -1,0 +1,78 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: .venv/bin/python scripts/run_ingestion.py
+    deps:
+    - path: data/raw/trips.csv
+      hash: md5
+      md5: e0d43e60ca78771f5ced3a1818415f87
+      size: 4982602
+    - path: data/raw/weather.csv
+      hash: md5
+      md5: ba6dbe6d4c64d3119c6fcf0a71c3455c
+      size: 4730
+    - path: src/data/ingest.py
+      hash: md5
+      md5: aa2ffc9be1fc270097109fafbd56ad92
+      size: 2649
+    outs:
+    - path: data/interim/ingested_trips.csv
+      hash: md5
+      md5: d0ba4c3fc62cf1f7496c9b706cc97940
+      size: 6555466
+    - path: data/interim/ingestion_report.json
+      hash: md5
+      md5: 0ec21e898fd8a33d81609476d2ae1b3e
+      size: 478
+  validate:
+    cmd: .venv/bin/python scripts/run_validation.py
+    deps:
+    - path: data/interim/ingested_trips.csv
+      hash: md5
+      md5: d0ba4c3fc62cf1f7496c9b706cc97940
+      size: 6555466
+    - path: src/data/validate.py
+      hash: md5
+      md5: de2da37ebbe3d367e0d2a6d75f7a0a52
+      size: 3825
+    outs:
+    - path: data/processed/validated_trips.csv
+      hash: md5
+      md5: 97a7d664decb75fcaaf0fa29b4fbedaa
+      size: 6456910
+    - path: data/processed/validation_report.json
+      hash: md5
+      md5: 199590b8132071fceaa22e17c2a48caf
+      size: 342
+    - path: data/quarantine/invalid_rows.csv
+      hash: md5
+      md5: 82405d045573db3718704f13fb86e8df
+      size: 119215
+  train:
+    cmd: .venv/bin/python scripts/train_model.py
+    deps:
+    - path: data/processed/validated_trips.csv
+      hash: md5
+      md5: 97a7d664decb75fcaaf0fa29b4fbedaa
+      size: 6456910
+    - path: src/features/transform.py
+      hash: md5
+      md5: c968041b8e24496e7f8db132e6db5669
+      size: 3118
+    - path: src/models/train.py
+      hash: md5
+      md5: ba4b3aea6bc0208425ac28ec5eb2fd19
+      size: 6532
+    outs:
+    - path: experiments/comparison.json
+      hash: md5
+      md5: d943af9e358cee475610e7198112fcba
+      size: 1111
+    - path: models/champion.joblib
+      hash: md5
+      md5: d7af3201c78decf096b36f170d128fac
+      size: 174922
+    - path: models/model_metadata.json
+      hash: md5
+      md5: 5041717f82b4d5dec76e5b870acd7d4b
+      size: 607
