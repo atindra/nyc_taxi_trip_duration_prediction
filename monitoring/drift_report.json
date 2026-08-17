@@ -11,7 +11,7 @@
       "ks_p_value": 0.0
     },
     "prediction_seconds": {
-      "psi": 0.4594434707004055,
+      "psi": 0.45943729450049675,
       "ks_statistic": 0.2791132424359417,
       "ks_p_value": 0.0
     },
@@ -21,8 +21,8 @@
     }
   },
   "performance": {
-    "reference_mae_seconds": 73.36309815885053,
-    "shifted_mae_seconds": 155.72411934239256,
+    "reference_mae_seconds": 73.36314520513127,
+    "shifted_mae_seconds": 155.71984306233836,
     "mae_change_ratio": 2.123
   }
 }

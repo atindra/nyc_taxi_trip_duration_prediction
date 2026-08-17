@@ -13,66 +13,66 @@ stages:
       size: 4730
     - path: src/data/ingest.py
       hash: md5
-      md5: aa2ffc9be1fc270097109fafbd56ad92
-      size: 2649
+      md5: 9fade85253867a80cc9ef265880a0229
+      size: 1992
     outs:
     - path: data/interim/ingested_trips.csv
       hash: md5
-      md5: d0ba4c3fc62cf1f7496c9b706cc97940
-      size: 6555466
+      md5: 1521d151cd64cd4ad004713776550f7f
+      size: 6266569
     - path: data/interim/ingestion_report.json
       hash: md5
-      md5: 0ec21e898fd8a33d81609476d2ae1b3e
-      size: 478
+      md5: ab0518f71bf72009a23e035e53551543
+      size: 83
   validate:
     cmd: .venv/bin/python scripts/run_validation.py
     deps:
     - path: data/interim/ingested_trips.csv
       hash: md5
-      md5: d0ba4c3fc62cf1f7496c9b706cc97940
-      size: 6555466
+      md5: 1521d151cd64cd4ad004713776550f7f
+      size: 6266569
     - path: src/data/validate.py
       hash: md5
-      md5: de2da37ebbe3d367e0d2a6d75f7a0a52
-      size: 3825
+      md5: c7a8225160e77ab4730e42ae16421942
+      size: 3698
     outs:
     - path: data/processed/validated_trips.csv
       hash: md5
-      md5: 97a7d664decb75fcaaf0fa29b4fbedaa
-      size: 6456910
+      md5: 1abb25b7738ce9470348f565a8fde9a9
+      size: 6172584
     - path: data/processed/validation_report.json
       hash: md5
       md5: 199590b8132071fceaa22e17c2a48caf
       size: 342
     - path: data/quarantine/invalid_rows.csv
       hash: md5
-      md5: 82405d045573db3718704f13fb86e8df
-      size: 119215
+      md5: a3cb9a7a42786dbfb4b769cb9950a0f1
+      size: 114637
   train:
     cmd: .venv/bin/python scripts/train_model.py
     deps:
     - path: data/processed/validated_trips.csv
       hash: md5
-      md5: 97a7d664decb75fcaaf0fa29b4fbedaa
-      size: 6456910
+      md5: 1abb25b7738ce9470348f565a8fde9a9
+      size: 6172584
     - path: src/features/transform.py
       hash: md5
-      md5: c968041b8e24496e7f8db132e6db5669
-      size: 3118
+      md5: 1a9d3f96fd1201e4eeeaceccd6b6737a
+      size: 3082
     - path: src/models/train.py
       hash: md5
-      md5: ba4b3aea6bc0208425ac28ec5eb2fd19
-      size: 6532
+      md5: 565f4b3a90336bc3d296ae4ac9b8b26b
+      size: 6282
     outs:
     - path: experiments/comparison.json
       hash: md5
-      md5: 90fbd90f05d8da654c3a947685de0482
-      size: 1110
+      md5: b5e6c171a9d0f85ccd313bb608a6ec86
+      size: 1109
     - path: models/champion.joblib
       hash: md5
-      md5: d7af3201c78decf096b36f170d128fac
-      size: 174922
+      md5: f844c5b483152de1ebf81928249f7c07
+      size: 174746
     - path: models/model_metadata.json
       hash: md5
-      md5: 101150123a423b4cc93f90560d823e51
+      md5: dc4e92ecac57b7c732f90c382146a6c2
       size: 607

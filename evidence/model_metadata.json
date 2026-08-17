@@ -1,7 +1,7 @@
 {
   "model_version": "1.0.0",
   "champion": "hist_gradient_boosting",
-  "mlflow_run_id": "3e4a8e2ae1294f0fa453d2a2d8261350",
+  "mlflow_run_id": "831d45a359b94e11b2092ce84e6b67b9",
   "target": "trip_duration_seconds",
   "feature_inputs": [
     "pickup_datetime",
