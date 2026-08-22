@@ -393,7 +393,11 @@ Response:
 \- R1: \*Machine Learning Engineering with Python\* (2nd Edition), Andrew P. McMahon, Packt, 2023.
 
 
+## Evidence
 
+`evidence/evidence.json` contains regenerable, timestamped proof of pipeline
+results (MLflow run metrics, model artifact metadata, a live API test).
+Regenerate with:(requires the API running on port 8000 — `uvicorn src.serve:app --port 8000`)
 
 
 
