@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-08-22T05:43:23.047561+00:00",
+  "mlflow_runs": {
+    "xgboost_gradient_boosting": {
+      "run_id": "ec56cabd4a184e65b187e4f97c42609f",
+      "params": {
+        "model_type": "XGBRegressor",
+        "n_estimators": "200",
+        "max_depth": "5",
+        "learning_rate": "0.1",
+        "random_state": "42"
+      },
+      "metrics": {
+        "mae": 1.652974991884569,
+        "rmse": 2.0775948830200286,
+        "r2": 0.9897338289407773
+      },
+      "start_time": "2026-08-16T06:12:59.964000+00:00",
+      "status": "FINISHED"
+    },
+    "linear_regression_baseline": {
+      "run_id": "068566f24ced44bc98b5342069a7ee3b",
+      "params": {
+        "model_type": "LinearRegression"
+      },
+      "metrics": {
+        "mae": 3.6277910461514,
+        "rmse": 4.901029435454212,
+        "r2": 0.9428703735760805
+      },
+      "start_time": "2026-08-16T06:12:33.460000+00:00",
+      "status": "FINISHED"
+    }
+  },
+  "model_metadata": {
+    "model_path": "models/xgboost_eta_model.joblib",
+    "model_size_bytes": 546473,
+    "feature_columns": [
+      "hour_of_day",
+      "weekday",
+      "is_weekend",
+      "distance_km",
+      "traffic_level",
+      "weather_clear",
+      "weather_fog",
+      "weather_rain",
+      "weather_storm"
+    ],
+    "champion_model_type": "XGBRegressor"
+  },
+  "live_api_test": {
+    "health_check": {
+      "status_code": 200,
+      "response": {
+        "status": "ok"
+      }
+    },
+    "sample_prediction": {
+      "request_body": {
+        "hour_of_day": 18,
+        "weekday": 2,
+        "is_weekend": 0,
+        "distance_km": 5.2,
+        "traffic_level": 2,
+        "weather": "rain"
+      },
+      "status_code": 200,
+      "response": {
+        "predicted_eta_minutes": 24.26
+      }
+    },
+    "tested_at": "2026-08-22T05:43:24.943327+00:00"
+  },
+  "drift_and_retraining": {
+    "drift_report_path": "logs/drift_report.html",
+    "drift_report_exists": true,
+    "retraining_trigger_doc_path": "RETRAINING_TRIGGER.md",
+    "retraining_trigger_doc_exists": true,
+    "note": "Run 'python src/check_retrain_trigger.py' for the live retrain/no-retrain decision."
+  }
+}
