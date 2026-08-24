@@ -11,6 +11,17 @@ machine with zero downloads.
 
 ![architecture](architecture.png)
 
+## Project consolidation
+
+This project was built as two independent implementations of the same brief
+(Flavor A — Delivery/Ride ETA Prediction), developed in parallel. We compared
+both against the rubric and consolidated on this repo as the submission base,
+since it verified clean end-to-end (pipeline → MLflow → API → Docker) from a
+fresh clone. The other implementation is preserved with its full history under
+[`reference/initial-implementation/`](reference/initial-implementation/) for
+reference; its strongest elements (the retraining-trigger design doc and the
+Evidently HTML drift report) are being integrated here.
+
 ## How to run
 
 ```bash
@@ -135,6 +146,7 @@ data/raw           committed synthetic dataset (seed 7)
 models/            champion artifact (gitignored, rebuild via dvc repro)
 evidence/          committed review snapshots
 monitoring/        drift report + retraining decision (committed), request log (runtime)
+reference/initial-implementation/  the parallel implementation, preserved with full history
 ```
 
 Dependencies are pinned in `requirements.txt` (pandas, scikit-learn, mlflow,
