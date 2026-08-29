@@ -12,6 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import numpy as np
 from evidently import Report
 from evidently.presets import DataDriftPreset
 
@@ -24,10 +25,13 @@ def main() -> None:
     reference, shifted = build_drift_windows()
 
     report = Report([DataDriftPreset()])
-    snapshot = report.run(
-        reference_data=reference[MONITORED_COLUMNS],
-        current_data=shifted[MONITORED_COLUMNS],
-    )
+    # The shifted window forces pickup_hour to a single value, so Evidently's
+    # internal correlation matrix divides by a zero stddev for that column.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        snapshot = report.run(
+            reference_data=reference[MONITORED_COLUMNS],
+            current_data=shifted[MONITORED_COLUMNS],
+        )
 
     output = ROOT / "monitoring/evidently_drift_report.html"
     snapshot.save_html(str(output))
