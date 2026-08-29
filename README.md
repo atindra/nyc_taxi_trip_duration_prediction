@@ -19,8 +19,13 @@ both against the rubric and consolidated on this repo as the submission base,
 since it verified clean end-to-end (pipeline → MLflow → API → Docker) from a
 fresh clone. The other implementation is preserved with its full history under
 [`reference/initial-implementation/`](reference/initial-implementation/) for
-reference; its strongest elements (the retraining-trigger design doc and the
-Evidently HTML drift report) are being integrated here.
+reference; its strongest elements are integrated here:
+
+- the retraining-trigger design doc, adapted to this pipeline's AND-based
+  guard — [`RETRAINING_TRIGGER.md`](RETRAINING_TRIGGER.md)
+- an Evidently data-drift HTML report, generated from this pipeline's own
+  drift windows — [`monitoring/evidently_drift_report.html`](monitoring/evidently_drift_report.html)
+  (regenerate via `scripts/generate_evidently_report.py`)
 
 ## How to run
 
@@ -141,13 +146,13 @@ src/data           ingestion + validation (quarantine with reasons)
 src/features       feature engineering + chronological split
 src/models         training, MLflow tracking, champion selection
 src/api            FastAPI service (validation, logging, /health 503)
-src/monitoring     drift metrics (PSI/KS/chi-squared) + retraining guard
+src/monitoring     drift metrics (PSI/KS/chi-squared), shared drift windows, retraining guard
 data/raw           committed synthetic dataset (seed 7)
 models/            champion artifact (gitignored, rebuild via dvc repro)
 evidence/          committed review snapshots
-monitoring/        drift report + retraining decision (committed), request log (runtime)
+monitoring/        drift report + retraining decision + Evidently HTML report (committed), request log (runtime)
 reference/initial-implementation/  the parallel implementation, preserved with full history
 ```
 
 Dependencies are pinned in `requirements.txt` (pandas, scikit-learn, mlflow,
-dvc, fastapi, uvicorn, joblib, scipy, numpy).
+dvc, fastapi, uvicorn, joblib, scipy, numpy, evidently).

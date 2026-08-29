@@ -1,103 +1,118 @@
-# Retraining Trigger Design — NYC Taxi Trip Duration Prediction
+# Retraining Trigger Design
 
-Adapted from the parallel implementation's trigger design doc
-(`reference/initial-implementation/RETRAINING_TRIGGER.md`), rewritten for this
-pipeline's more conservative AND-based guard
-(`src/monitoring/retrain_trigger.py`).
+This doc explains when we would recommend retraining the model, and why we
+chose those rules. The logic itself lives in `src/monitoring/retrain_trigger.py`
+and runs via `scripts/run_retraining_check.py`. It is based on the trigger
+design from the parallel implementation
+(`reference/initial-implementation/RETRAINING_TRIGGER.md`), but we changed the
+rule from an OR to an AND for the reasons below.
 
-## Rule
+## The rule
 
-Recommend retraining only when **all three** conditions hold (AND, not OR):
+We only recommend retraining when **all three** of these are true:
 
-1. **Data valid** — the latest validation run produced usable rows
-   (`valid_rows > 0` in `data/processed/validation_report.json`).
-2. **Severe drift** — PSI > 0.25 on **at least 2** of the monitored signals
-   (`distance_km`, `pickup_hour`, `prediction_seconds`; categorical `weather`
-   is tracked separately via chi-square and does not count toward this gate).
-3. **Performance degraded** — labelled MAE on the current window exceeds
-   **1.20×** the champion's reference-window MAE.
+1. **The new data is valid.** The latest validation run actually produced
+   usable rows (`valid_rows > 0` in `data/processed/validation_report.json`).
+   If the incoming data is broken, retraining on it would make things worse.
+2. **Drift is severe.** PSI > 0.25 on at least 2 of the monitored numeric
+   signals (`distance_km`, `pickup_hour`, `prediction_seconds`). The
+   categorical `weather` column is checked too (chi-square test), but it does
+   not count toward this condition. More on that below.
+3. **Performance actually dropped.** The labelled MAE on the new window is
+   more than 1.20x the champion's MAE on the reference window.
 
-Output (`monitoring/retraining_decision.json`) is either
-`retrain_and_compare` or `do_not_retrain`. The trigger **recommends**; it
-never retrains or redeploys automatically.
+If all three hold, the decision file (`monitoring/retraining_decision.json`)
+says `retrain_and_compare`. Otherwise it says `do_not_retrain`. The trigger
+only recommends. It never retrains or redeploys anything by itself.
 
-## Justification
+## Why we chose these rules
 
-- **Why AND instead of OR.** The parallel implementation used an OR rule
-  (dataset-level drift *or* single-feature drift above a threshold). Drift
-  alone is not proof of failure: this simulation's `pickup_hour` PSI of 21.33
-  is produced trivially by *any* time-of-day skew between windows, yet a model
-  can remain accurate on shifted-but-learnable traffic. An OR rule therefore
-  retrains on correlation with harm; requiring **measured** accuracy
-  degradation ties the decision to realized harm. Requiring **multi-feature**
-  severe drift guards against a single noisy metric firing the trigger.
-  Retraining has real cost (compute, review, regression risk), so the guard is
-  deliberately conservative: it accepts late detection of some failure modes
-  in exchange for far fewer false-positive retrains.
-- **Why PSI > 0.25.** Standard industry interpretation of the Population
-  Stability Index: < 0.1 is insignificant, 0.1–0.25 is moderate shift,
-  > 0.25 is significant shift. We use the "significant" boundary.
-- **Why at least 2 features.** One drifting feature can be benign or
-  measurement-local; two independent signals drifting severely is a systemic
-  shift worth acting on.
-- **Why a 20% MAE tolerance.** Absorbs ordinary batch-to-batch noise. On this
-  model's ~73 s reference MAE, the 1.20× gate means we only act once errors
-  grow by roughly 15+ seconds — a user-visible degradation, not a rounding
-  effect.
-- **Why chi-square for weather.** `weather` is categorical, so PSI/KS do not
-  apply. It is monitored (a chi-square test in `src/monitoring/monitor.py`)
-  but deliberately not part of the `severe_drift` count — categorical weather
-  mix changes are expected seasonally and should not, by themselves, force a
-  retrain.
+**AND instead of OR.** The parallel implementation used an OR rule: retrain if
+the dataset as a whole drifted, or if one important feature drifted. We think
+that fires too easily. Drift on its own is not proof the model is failing. For
+example, our simulation's `pickup_hour` PSI is 21.33, which sounds alarming,
+but it comes from simply moving every trip to 17:30. A model can handle a
+shift like that just fine. An OR rule would retrain whenever drift shows up,
+even when accuracy has not moved. Our rule waits until drift and a real,
+measured accuracy drop happen together. That means we might react a little
+later to some failure modes, but we avoid wasting retraining effort (and the
+regression risk that comes with it) on false alarms.
 
-## Validation against the observed drift run
+**At least 2 features.** One drifting feature can be noise or something local
+to how the data was collected. Two features drifting hard at the same time is
+a much stronger signal that something systemic changed.
 
-`scripts/simulate_drift.py` simulates an evening-rush surge (all pickups moved
-to 17:30, trip distances stretched 40%, actual durations inflated 30% for
-congestion — covariate shift *and* concept drift). Predictions always come
-from the deployed champion. The committed results
-(`monitoring/drift_report.json`):
+**PSI threshold of 0.25.** This is the usual industry cutoff for the
+Population Stability Index: below 0.1 is nothing to worry about, 0.1 to 0.25
+is moderate shift, and above 0.25 is a significant shift. We act at
+"significant".
+
+**MAE tolerance of 1.20x.** MAE bounces around a bit between batches even when
+nothing is wrong, so we do not want to retrain over small wobbles. On a
+reference MAE of about 73s, the 1.20x gate means we only act once errors grow
+by roughly 15 seconds or more. That is a degradation a rider would notice, not
+a rounding error.
+
+**Why weather is monitored but not in the drift count.** Weather is
+categorical, so PSI does not apply to it, and we use a chi-square test
+instead. We also expect the weather mix to change with the seasons, so a
+shifted weather distribution on its own should not force a retrain. We still
+track it so a human reviewer can see it.
+
+## How the rule behaved on our drift run
+
+`scripts/simulate_drift.py` builds a stressed window that looks like an
+evening rush-hour surge: every pickup moves to 17:30, trip distances grow by
+40%, and actual durations get a 30% congestion penalty. So the inputs shift
+and the relationship between inputs and duration shifts too. All predictions
+come from the deployed champion model. Here is what the committed results in
+`monitoring/drift_report.json` show:
 
 | Signal | Value | Threshold | Fires? |
 |---|---|---|---|
 | `pickup_hour` PSI | 21.33 | > 0.25 | yes |
 | `prediction_seconds` PSI | 0.459 | > 0.25 | yes |
-| `distance_km` PSI | 0.222 | > 0.25 | no (below — reported as-is; 2 of 3 suffices) |
-| `weather` chi-square | p = 1.0 | — | no categorical drift |
-| MAE | 73.36 s → 155.72 s (2.123×) | > 1.20× | yes |
+| `distance_km` PSI | 0.222 | > 0.25 | no (close, but below; 2 of 3 is enough) |
+| `weather` chi-square | p = 1.0 | n/a | no categorical drift |
+| MAE | 73.36s to 155.72s (2.123x) | > 1.20x | yes |
 | Data valid | 49,213 valid rows | > 0 | yes |
 
-All three conditions fire → `monitoring/retraining_decision.json` records
-`retrain_and_compare`. Reproduce with:
+All three conditions fire, so the committed decision in
+`monitoring/retraining_decision.json` is `retrain_and_compare`. You can
+reproduce it with:
 
 ```bash
 .venv/bin/python scripts/simulate_drift.py
 .venv/bin/python scripts/run_retraining_check.py
 ```
 
-**Contrast case.** A shift that changes only the weather mix would produce a
-low chi-square p-value but no PSI breaches and no MAE degradation — the guard
-correctly returns `do_not_retrain`, demonstrating the trigger is not a hair
-trigger.
+It is also worth looking at the opposite case. If only the weather mix
+changed, the chi-square would flag it but no PSI threshold would break and MAE
+would stay flat, so the trigger returns `do_not_retrain`. That is the point of
+the AND rule: it does not jump at every single signal.
 
-## What retraining would involve (not automated in this project)
+## What retraining would actually involve
 
-1. Collect newly logged requests from `monitoring/predictions.sqlite`
-   alongside ground-truth outcomes once they arrive (labels lag predictions).
-2. Combine with a representative slice of the drifted/new-distribution data.
-3. Re-run the pipeline (`.venv/bin/dvc repro`) on the combined dataset; the
-   new candidates land in MLflow alongside existing runs.
-4. Promote only if a candidate's validation MAE beats the current champion
-   (74.2 s test MAE); champion selection is already part of the `train` stage.
+This part is not automated in the project, but the steps would be:
 
-## Limitations / hidden assumptions
+1. Collect the requests logged in `monitoring/predictions.sqlite` and join
+   them with real outcomes once those arrive (labels always lag predictions).
+2. Mix that with a representative slice of the drifted data.
+3. Run the pipeline again (`.venv/bin/dvc repro`) on the combined dataset.
+   The new candidates get logged to MLflow next to the existing runs.
+4. Only promote a new model if its validation MAE beats the current champion
+   (74.2s test MAE). Champion selection is already built into the `train`
+   stage, so nothing new is needed there.
 
-- PSI > 0.25 and the 1.20× MAE factor are heuristics, tuned for this
-  synthetic scenario rather than derived from production SLAs.
-- The "current window" here is a **simulation**; in deployment it would be
+## Honest limitations
+
+- The PSI cutoff of 0.25 and the 1.20x MAE factor are heuristics. They are
+  sensible defaults for this scenario, not numbers derived from a production
+  SLA.
+- The "current window" here is a simulation. In a real deployment it would be
   built from logged requests joined with delayed outcomes.
-- `performance_degraded` needs labelled outcomes, which arrive with a lag —
-  the trigger is only as fresh as the labels.
-- With only ~50k rows of synthetic data, PSI on `pickup_hour` saturates
-  (21.33) under a full time-of-day shift; the ≥2-feature gate, not the PSI
-  magnitude, is what carries the decision.
+- The performance check needs labelled outcomes, and those arrive late, so the
+  trigger is only as fresh as the labels.
+- With ~50k rows of synthetic data, `pickup_hour` PSI saturates (21.33) as
+  soon as the time of day shifts fully. That is why the decision leans on the
+  "at least 2 features" rule rather than on how big any single PSI number is.
